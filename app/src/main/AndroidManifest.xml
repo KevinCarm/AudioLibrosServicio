@@ -27,6 +27,7 @@
         <service android:name=".services.MiIntentService"></service>
 
 
+        <service android:name=".MyService"/>
 
     </application>
 

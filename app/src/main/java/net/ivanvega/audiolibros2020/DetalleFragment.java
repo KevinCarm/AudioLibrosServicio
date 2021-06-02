@@ -20,6 +20,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.MediaController;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import net.ivanvega.audiolibros2020.services.MiIntentService;
 import net.ivanvega.audiolibros2020.services.MiServicio;
@@ -32,11 +33,10 @@ import java.io.IOException;
  * create an instance of this fragment.
  */
 public class DetalleFragment extends Fragment
-                            implements View.OnTouchListener,
-                            MediaPlayer.OnPreparedListener,
-        MediaController.MediaPlayerControl
-{
-    MiServicio  miServicio;
+        implements View.OnTouchListener,
+        MediaPlayer.OnPreparedListener,
+        MediaController.MediaPlayerControl {
+    MiServicio miServicio;
     public static String ARG_ID_LIBRO = "id_libro";
 
     // TODO: Rename parameter arguments, choose names that match
@@ -88,7 +88,7 @@ public class DetalleFragment extends Fragment
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
 
-       View vista = inflater.inflate(R.layout.fragment_detalle, container, false);
+        View vista = inflater.inflate(R.layout.fragment_detalle, container, false);
 
         Bundle args = getArguments();
 
@@ -100,7 +100,6 @@ public class DetalleFragment extends Fragment
         }
 
 
-
         return vista;
     }
 
@@ -108,39 +107,42 @@ public class DetalleFragment extends Fragment
         ponInfoLibro(id, getView());
     }
 
-    ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            MiServicio.MiServicioBinder miServicioBinder =
-                    (MiServicio.MiServicioBinder) iBinder ;
-             miServicio =
-                    miServicioBinder.getService();
+//    ServiceConnection serviceConnection = new ServiceConnection() {
+//        @Override
+//        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+//            MiServicio.MiServicioBinder miServicioBinder =
+//                    (MiServicio.MiServicioBinder) iBinder ;
+//             miServicio =
+//                    miServicioBinder.getService();
+//
+//            Log.d("MSE", "GFrameno enlazado al seervicio " + componentName);
+//
+//             int randf =  miServicio.getRandomNumber();
+//            Log.d("MSE", "Peticion  al servicio " + randf);
+//
+//        }
+//
+//        @Override
+//        public void onServiceDisconnected(ComponentName componentName) {
+//
+//        }
+//    };
 
-            Log.d("MSE", "GFrameno enlazado al seervicio " + componentName);
-
-             int randf =  miServicio.getRandomNumber();
-            Log.d("MSE", "Peticion  al servicio " + randf);
-
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-
-        }
-    };
+    Intent intent;
+    String title;
+    String author;
 
     private void ponInfoLibro(int id, View vista) {
 
         //servicio iniciado
         //servicio de primer plano
-        iSer = new Intent(getContext(), MiServicio.class);
-        getActivity().startService(iSer);
-
-        getActivity().bindService(iSer, serviceConnection, Context.BIND_AUTO_CREATE);
-
-        Intent miIS = new Intent(getContext(), MiIntentService.class);
-        getActivity().startService(miIS);
-
+//        iSer = new Intent(getContext(), MiServicio.class);
+//        getActivity().startService(iSer);
+//
+//        getActivity().bindService(iSer, serviceConnection, Context.BIND_AUTO_CREATE);
+//
+//        Intent miIS = new Intent(getContext(), MiIntentService.class);
+//        getActivity().startService(miIS);
 
 
         Libro libro =
@@ -151,7 +153,13 @@ public class DetalleFragment extends Fragment
 
         vista.setOnTouchListener(this);
 
-        if (mediaPlayer != null){
+        intent = new Intent(getContext(), MyService.class);
+        intent.putExtra("uri", libro.urlAudio);
+        intent.putExtra("titulo", libro.titulo);
+        intent.putExtra("autor", libro.autor);
+
+
+        if (mediaPlayer != null) {
             mediaPlayer.release();
         }
         mediaPlayer = new MediaPlayer();
@@ -162,13 +170,20 @@ public class DetalleFragment extends Fragment
             mediaPlayer.setDataSource(getActivity(), audio);
             mediaPlayer.prepareAsync();
         } catch (IOException e) {
-            Log.e("Audiolibros", "ERROR: No se puede reproducir "+audio,e);
+            Log.e("Audiolibros", "ERROR: No se puede reproducir " + audio, e);
         }
+    }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        try {
+            Toast.makeText(getContext(), "Resumen fragment", Toast.LENGTH_SHORT).show();
+            getContext().stopService(intent);
+            mediaPlayer.seekTo(getCurrentPosition());
+        } catch (Exception e) {
 
-
-
-
+        }
     }
 
     @Override
@@ -185,7 +200,7 @@ public class DetalleFragment extends Fragment
 
     }
 
-        @Override
+    @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
         mediaController.show();
         return false;
@@ -203,14 +218,23 @@ public class DetalleFragment extends Fragment
 
     @Override
     public void start() {
-        mediaPlayer.start();
+        try {
+            mediaPlayer.start();
+        } catch (Exception e) {
+
+        }
     }
 
     @Override
     public void pause() {
-        mediaPlayer.pause();
-        int randf =  miServicio.getRandomNumber();
-        Log.d("MSE", "Peticion  al servicio " + randf);
+        try {
+            mediaPlayer.pause();
+            Toast.makeText(getContext(), "Pausar audio", Toast.LENGTH_LONG).show();
+            int randf = miServicio.getRandomNumber();
+            Log.d("MSE", "Peticion  al servicio " + randf);
+        } catch (Exception e) {
+            Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -230,7 +254,13 @@ public class DetalleFragment extends Fragment
 
     @Override
     public boolean isPlaying() {
-        return mediaPlayer.isPlaying();
+        try {
+            return mediaPlayer.isPlaying();
+        } catch (Exception e) {
+            Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
     }
 
     @Override
@@ -261,5 +291,20 @@ public class DetalleFragment extends Fragment
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        Toast.makeText(getContext(), "Pausa", Toast.LENGTH_LONG).show();
+        intent.putExtra("time", mediaPlayer.getCurrentPosition());
+        getContext().startService(intent);
+    }
+
+    @Override
+    public void onDestroy() {
+        Toast.makeText(getContext(), "Destroy", Toast.LENGTH_LONG).show();
+        super.onDestroy();
+        Toast.makeText(getContext(), "Destroy", Toast.LENGTH_LONG).show();
     }
 }
